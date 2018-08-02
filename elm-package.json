@@ -1,6 +1,6 @@
 {
-    "version": "1.0.0",
-    "summary": "Image and general purpose content gallery, like lightbox.",
+    "version": "1.0.1",
+    "summary": "Image and general purpose content gallery/slider.",
     "repository": "https://github.com/rl-king/elm-gallery.git",
     "license": "BSD3",
     "source-directories": [
@@ -9,8 +9,7 @@
     "exposed-modules": ["Gallery", "Gallery.Image"],
     "dependencies": {
         "elm-lang/core": "5.1.1 <= v < 6.0.0",
-        "elm-lang/html": "2.0.0 <= v < 3.0.0",
-        "elm-lang/svg": "2.0.0 <= v < 3.0.0"
+        "elm-lang/html": "2.0.0 <= v < 3.0.0"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }
