@@ -113,7 +113,8 @@ type alias Position =
     }
 
 
-{-| -}
+{-| Initialize a gallery state
+-}
 init : SlideCount -> State
 init slideCount =
     State 0 Nothing slideCount
@@ -213,7 +214,7 @@ update msg ((State index drag slideCount) as state) =
 
 {-| Go to next slide
 
-    { model | gallery = Gallery.next 10 model.gallery }
+    { model | gallery = Gallery.next model.gallery }
 
 -}
 next : State -> State
@@ -223,7 +224,7 @@ next (State index _ slideCount) =
 
 {-| Go to previous slide
 
-    { model | gallery = Gallery.previous 10 model.gallery }
+    { model | gallery = Gallery.previous model.gallery }
 
 -}
 previous : State -> State
@@ -233,7 +234,7 @@ previous (State index _ slideCount) =
 
 {-| Go to slide at index
 
-    { model | gallery = Gallery.index 10 4 }
+    { model | gallery = Gallery.index 10 model.gallery }
 
 -}
 index : Int -> State -> State
