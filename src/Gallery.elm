@@ -114,6 +114,9 @@ type alias Position =
 
 
 {-| Initialize a gallery state
+
+    { gallery = Gallery.init (List.length someSlides) }
+
 -}
 init : SlideCount -> State
 init slideCount =
@@ -174,7 +177,18 @@ type Msg
     | DragEnd
 
 
-{-| -}
+{-|
+
+    type Msg
+        = GalleryMsg Gallery.Msg
+
+    update : Msg -> Model -> Model
+    update msg model =
+        case msg of
+            GalleryMsg msg ->
+                { model | gallery = Gallery.update msg model.gallery }
+
+-}
 update : Msg -> State -> State
 update msg ((State index drag slideCount) as state) =
     case msg of
