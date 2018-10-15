@@ -1,9 +1,8 @@
-module Gallery.Image
-    exposing
-        ( Size(..)
-        , Url
-        , slide
-        )
+module Gallery.Image exposing
+    ( slide
+    , Size(..)
+    , Url
+    )
 
 {-|
 
@@ -42,10 +41,8 @@ type alias Url =
 slide : Url -> Size -> Html msg
 slide url size =
     div
-        [ style
-            [ ( "background-image", "url(" ++ url ++ ")" )
-            , ( "background-size", toBackgroundSize size )
-            ]
+        [ style "background-image" ("url(" ++ url ++ ")")
+        , style "background-size" (toBackgroundSize size)
         , class "elm-gallery-image"
         ]
         []

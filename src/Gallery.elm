@@ -1,26 +1,25 @@
-module Gallery
-    exposing
-        ( Config
-        , Controls(..)
-        , Length
-        , Msg
-        , SlideCount
-        , State
-        , config
-        , current
-        , em
-        , index
-        , init
-        , next
-        , pct
-        , previous
-        , px
-        , rem
-        , update
-        , vh
-        , view
-        , vw
-        )
+module Gallery exposing
+    ( view
+    , Config
+    , config
+    , Length
+    , px
+    , pct
+    , rem
+    , em
+    , vw
+    , vh
+    , init
+    , update
+    , State
+    , Msg
+    , SlideCount
+    , Controls(..)
+    , index
+    , next
+    , previous
+    , current
+    )
 
 {-|
 
@@ -74,14 +73,13 @@ module Gallery
 
 -}
 
-import Color exposing (Color)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy as Lazy
 import Json.Decode as Decode
-import Time exposing (Time)
+
 
 
 -- STATE
@@ -131,7 +129,7 @@ init slideCount =
 type Config
     = Config
         { id : String
-        , transition : Time
+        , transition : Int
         , width : Length
         , height : Length
         }
@@ -141,7 +139,7 @@ type Config
 
      Gallery.config
         { id = "image-gallery"
-        , transition = Time.second * 0.5
+        , transition = 500 -- time in milliseconds
         , width = Gallery.px 800
         , height = Gallery.px 400
         }
@@ -149,7 +147,7 @@ type Config
 -}
 config :
     { id : String
-    , transition : Time
+    , transition : Int
     , width : Length
     , height : Length
     }
@@ -190,7 +188,7 @@ type Msg
 
 -}
 update : Msg -> State -> State
-update msg ((State index drag slideCount) as state) =
+update msg ((State index_ drag slideCount) as state) =
     case msg of
         Next ->
             next state
@@ -199,24 +197,26 @@ update msg ((State index drag slideCount) as state) =
             previous state
 
         DragStart position ->
-            State index (Just (Drag position position)) slideCount
+            State index_ (Just (Drag position position)) slideCount
 
         DragAt position ->
             let
-                updateDrag current (Drag start _) =
-                    Drag start current
+                updateDrag current_ (Drag start _) =
+                    Drag start current_
             in
-            State index (Maybe.map (updateDrag position) drag) slideCount
+            State index_ (Maybe.map (updateDrag position) drag) slideCount
 
         DragEnd ->
             case drag of
-                Just (Drag start current) ->
-                    if start.x - current.x > 100 then
+                Just (Drag start current_) ->
+                    if start.x - current_.x > 100 then
                         next state
-                    else if start.x - current.x < -100 then
+
+                    else if start.x - current_.x < -100 then
                         previous state
+
                     else
-                        State index Nothing slideCount
+                        State index_ Nothing slideCount
 
                 Nothing ->
                     state
@@ -232,8 +232,8 @@ update msg ((State index drag slideCount) as state) =
 
 -}
 next : State -> State
-next (State index _ slideCount) =
-    State (clamp 0 (slideCount - 1) (index + 1)) Nothing slideCount
+next (State index_ _ slideCount) =
+    State (clamp 0 (slideCount - 1) (index_ + 1)) Nothing slideCount
 
 
 {-| Go to previous slide
@@ -242,8 +242,8 @@ next (State index _ slideCount) =
 
 -}
 previous : State -> State
-previous (State index _ slideCount) =
-    State (clamp 0 (slideCount - 1) (index - 1)) Nothing slideCount
+previous (State index_ _ slideCount) =
+    State (clamp 0 (slideCount - 1) (index_ - 1)) Nothing slideCount
 
 
 {-| Go to slide at index
@@ -252,15 +252,15 @@ previous (State index _ slideCount) =
 
 -}
 index : Int -> State -> State
-index index (State _ _ slideCount) =
-    State (clamp 0 (slideCount - 1) index) Nothing slideCount
+index index_ (State _ _ slideCount) =
+    State (clamp 0 (slideCount - 1) index_) Nothing slideCount
 
 
 {-| Get current index
 -}
 current : State -> Int
-current (State index _ _) =
-    index
+current (State index_ _ _) =
+    index_
 
 
 
@@ -273,10 +273,10 @@ current (State index _ _) =
 
 -}
 view : Config -> State -> List Controls -> List ( String, Html Msg ) -> Html Msg
-view ((Config config_) as config) ((State _ drag _) as state) navigation slides =
-    div [ id config_.id ] <|
-        [ Lazy.lazy3 viewSlides state config slides
-        , Lazy.lazy2 styleSheet config drag
+view ((Config configR) as config_) ((State _ drag _) as state) navigation slides =
+    div [ id configR.id ] <|
+        [ Lazy.lazy2 viewSlides state slides
+        , Lazy.lazy2 styleSheet config_ drag
         ]
             ++ List.map (viewControls state) navigation
 
@@ -285,34 +285,32 @@ view ((Config config_) as config) ((State _ drag _) as state) navigation slides 
 -- SLIDES
 
 
-viewSlides : State -> Config -> List ( String, Html Msg ) -> Html Msg
-viewSlides ((State index _ _) as state) config slides =
+viewSlides : State -> List ( String, Html Msg ) -> Html Msg
+viewSlides ((State index_ _ _) as state) slides =
     Keyed.ul (viewSlidesAttributes state) <|
-        List.indexedMap (viewSlide index) slides
+        List.indexedMap (viewSlide index_) slides
 
 
 viewSlidesAttributes : State -> List (Attribute Msg)
-viewSlidesAttributes ((State index drag slideCount) as state) =
+viewSlidesAttributes ((State _ drag slideCount) as state) =
     events drag
         ++ [ classList
                 [ ( "elm-gallery-transition", drag == Nothing ) ]
-           , style
-                [ ( "transform", toTranslate state )
-                , ( "width", toString (100 * slideCount) ++ "%" )
-                ]
+           , style "transform" (toTranslate state)
+           , style "width" (String.fromInt (100 * slideCount) ++ "%")
            , id "elm-gallery-focusable"
            , tabindex 0
            ]
 
 
 toTranslate : State -> String
-toTranslate (State index drag slideCount) =
+toTranslate (State index_ drag slideCount) =
     case drag of
         Nothing ->
-            toCssTranslate slideCount index 0 0
+            toCssTranslate slideCount index_ 0 0
 
-        Just (Drag start current) ->
-            toCssTranslate slideCount index (current.x - start.x) 0
+        Just (Drag start current_) ->
+            toCssTranslate slideCount index_ (current_.x - start.x) 0
 
 
 
@@ -349,21 +347,21 @@ viewControls state navigation =
 
 
 viewControlsArrows : State -> Html Msg
-viewControlsArrows (State index _ slideCount) =
+viewControlsArrows (State index_ _ slideCount) =
     div
         []
         [ button
             [ onClick Next
             , class "elm-gallery-next"
             , title "next"
-            , disabled (index == slideCount - 1)
+            , disabled (index_ == slideCount - 1)
             ]
             []
         , button
             [ onClick Previous
             , class "elm-gallery-previous"
             , title "previous"
-            , disabled (index == 0)
+            , disabled (index_ == 0)
             ]
             []
         ]
@@ -386,8 +384,10 @@ moveEvent : Maybe a -> List (Attribute Msg)
 moveEvent drag =
     case drag of
         Just _ ->
-            [ onPreventDefault "mousemove" (Decode.map DragAt decodePosition)
-            , onPreventDefault "touchmove" (Decode.map DragAt decodePosition)
+            [ preventDefaultOn "mousemove"
+                (Decode.map (\p -> ( DragAt p, True )) decodePosition)
+            , preventDefaultOn "touchmove"
+                (Decode.map (\p -> ( DragAt p, True )) decodePosition)
             , on "mouseup" (Decode.succeed DragEnd)
             , on "mouseleave" (Decode.succeed DragEnd)
             , on "touchend" (Decode.succeed DragEnd)
@@ -425,12 +425,6 @@ keycodeToMsg keyCode =
 
         _ ->
             Decode.fail "Unknown key"
-
-
-onPreventDefault : String -> Decode.Decoder Msg -> Attribute Msg
-onPreventDefault event =
-    onWithOptions event
-        { defaultOptions | preventDefault = True }
 
 
 
@@ -494,87 +488,61 @@ lengthToString : Length -> String
 lengthToString length =
     case length of
         Px x ->
-            toString x ++ "px"
+            String.fromFloat x ++ "px"
 
         Pct x ->
-            toString x ++ "%"
+            String.fromFloat x ++ "%"
 
         Rem x ->
-            toString x ++ "rem"
+            String.fromFloat x ++ "rem"
 
         Em x ->
-            toString x ++ "em"
+            String.fromFloat x ++ "em"
 
         Vh x ->
-            toString x ++ "vh"
+            String.fromFloat x ++ "vh"
 
         Vw x ->
-            toString x ++ "vw"
+            String.fromFloat x ++ "vw"
 
         Unset ->
             ""
 
 
-toCssColor : Color -> String
-toCssColor color =
-    Color.toRgb color
-        |> (\{ red, green, blue, alpha } ->
-                "rgba("
-                    ++ toString red
-                    ++ ","
-                    ++ toString green
-                    ++ ","
-                    ++ toString blue
-                    ++ ","
-                    ++ toString alpha
-                    ++ ")"
-           )
-
-
-toCssTranslate : SlideCount -> Int -> a -> b -> String
-toCssTranslate slideCount index x y =
+toCssTranslate : SlideCount -> Int -> Int -> Int -> String
+toCssTranslate slideCount index_ x y =
     "translate3d("
-        ++ toString (negate <| toFloat index * (100 / toFloat slideCount))
+        ++ String.fromFloat (negate <| toFloat index_ * (100 / toFloat slideCount))
         ++ "%, "
-        ++ toString y
+        ++ String.fromInt y
         ++ "px, 0) "
         ++ "translateX("
-        ++ toString x
+        ++ String.fromInt x
         ++ "px)"
 
 
-toCssButtonColor : Maybe Color -> String
-toCssButtonColor buttonColor =
-    case buttonColor of
-        Just color ->
-            toCssColor color
-
-        Nothing ->
-            toCssColor Color.white
-
-
 styleSheet : Config -> Maybe Drag -> Html msg
-styleSheet (Config config) drag =
+styleSheet (Config config_) drag =
     node "style"
         []
         [ text <|
             """
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ {
                 position: relative;
                 width: """
-                ++ lengthToString config.width
+                ++ lengthToString config_.width
                 ++ """;
                 height:
                     """
-                ++ lengthToString config.height
+                ++ lengthToString config_.height
                 ++ """;
                 overflow: hidden;
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ ul {
                 position: absolute;
                 display: flex;
@@ -588,7 +556,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ ul:hover {
                 cursor: move;
                 cursor: grab;
@@ -597,7 +565,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ ul:active {
                 cursor: grabbing;
                 cursor: -moz-grabbing;
@@ -605,7 +573,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ button {
                 background-color: transparent;
                 border-radius: 0;
@@ -616,16 +584,16 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ button:hover {
                 opacity: .85;
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next {
                 position: absolute;
                 top: 24%;
@@ -634,44 +602,44 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next {
                 right: 0rem;
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous {
                 left: 0rem;
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous:disabled,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next:disabled {
                 opacity: 0.2;
                 cursor: not-allowed;
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-close:after,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-close:before,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous:after,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous:before,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next:after,
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next:before {
                 content: '';
                 position: absolute;
@@ -681,7 +649,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next:before {
                 top: calc(50% - 1rem);
                 right: 1rem;
@@ -689,7 +657,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-next:after {
                 top: calc(50% + .3rem);
                 right: 1rem;
@@ -697,7 +665,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous:before {
                 top: calc(50% - 1rem);
                 left: 1rem;
@@ -705,7 +673,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-previous:after {
                 top: calc(50% + .3rem);
                 left: 1rem;
@@ -713,7 +681,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-itemcontainer {
                 position: relative;
                 width: 100%;
@@ -721,7 +689,7 @@ styleSheet (Config config) drag =
             }
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-image {
                 position: absolute;
                 background-position: center center;
@@ -732,10 +700,10 @@ styleSheet (Config config) drag =
 
 
             #"""
-                ++ config.id
+                ++ config_.id
                 ++ """ .elm-gallery-transition {
                 transition: transform """
-                ++ toString config.transition
+                ++ String.fromInt config_.transition
                 ++ """ms ease;
             }
             """
