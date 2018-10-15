@@ -3,7 +3,7 @@
 A simple content and/or image gallery with touch and keyboard navigation.
 
 
-[example live](https://rl-king.github.io/elm-gallery-example/)<br>
+[example live](https://rl-king.github.io/elm-gallery-example/) |
 [example code](https://github.com/rl-king/elm-gallery/tree/master/example)
 
 ## Example code
@@ -38,7 +38,7 @@ config : Gallery.Config
 config =
     Gallery.config
         { id = "image-gallery"
-        , transition = Time.second * 0.5
+        , transition = 500
         , width = Gallery.vw 60
         , height = Gallery.px 400
         }
