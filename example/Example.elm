@@ -1,18 +1,19 @@
-module Example exposing (..)
+module Example exposing (main)
 
+import Browser
 import Gallery exposing (..)
 import Gallery.Image as Image
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Time
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Html.beginnerProgram
-        { model = init
+    Browser.document
+        { init = init
         , view = view
         , update = update
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -22,11 +23,13 @@ type alias Model =
     }
 
 
-init : Model
-init =
-    { textGallery = Gallery.init (List.length textSlides)
-    , imageGallery = Gallery.init (List.length imageSlides)
-    }
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { textGallery = Gallery.init (List.length textSlides)
+      , imageGallery = Gallery.init (List.length imageSlides)
+      }
+    , Cmd.none
+    )
 
 
 type Msg
@@ -34,25 +37,33 @@ type Msg
     | ImageGalleryMsg Gallery.Msg
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        TextGalleryMsg msg ->
-            { model | textGallery = Gallery.update msg model.textGallery }
+        TextGalleryMsg textGalleryMsg ->
+            ( { model | textGallery = Gallery.update textGalleryMsg model.textGallery }
+            , Cmd.none
+            )
 
-        ImageGalleryMsg msg ->
-            { model | imageGallery = Gallery.update msg model.imageGallery }
+        ImageGalleryMsg imageGalleryMsg ->
+            ( { model | imageGallery = Gallery.update imageGalleryMsg model.imageGallery }
+            , Cmd.none
+            )
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
-    main_ []
-        [ styling
-        , Html.map ImageGalleryMsg <|
-            Gallery.view imageConfig model.imageGallery [ Gallery.Arrows ] imageSlides
-        , Html.map TextGalleryMsg <|
-            Gallery.view textConfig model.textGallery [] textSlides
+    { title = "elm-gallery"
+    , body =
+        [ main_ []
+            [ styling
+            , Html.map ImageGalleryMsg <|
+                Gallery.view imageConfig model.imageGallery [ Gallery.Arrows ] imageSlides
+            , Html.map TextGalleryMsg <|
+                Gallery.view textConfig model.textGallery [] textSlides
+            ]
         ]
+    }
 
 
 textSlides : List ( String, Html msg )
@@ -74,7 +85,7 @@ imageConfig : Gallery.Config
 imageConfig =
     Gallery.config
         { id = "image-gallery"
-        , transition = Time.second * 0.5
+        , transition = 500
         , width = Gallery.vw 60
         , height = Gallery.px 400
         }
@@ -84,7 +95,7 @@ textConfig : Gallery.Config
 textConfig =
     Gallery.config
         { id = "text-gallery"
-        , transition = Time.second * 0.5
+        , transition = 500
         , width = Gallery.px 600
         , height = Gallery.px 400
         }
