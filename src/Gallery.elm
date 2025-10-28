@@ -2,6 +2,7 @@ module Gallery exposing
     ( view
     , Config
     , config
+    , disableKeyboardNavigation
     , Length
     , px
     , pct
@@ -33,6 +34,7 @@ module Gallery exposing
 
 @docs Config
 @docs config
+@docs disableKeyboardNavigation
 
 
 ## Dimensions
@@ -132,6 +134,7 @@ type Config
         , transition : Int
         , width : Length
         , height : Length
+        , keyboardNavigation : Bool
         }
 
 
@@ -158,7 +161,24 @@ config { id, transition, width, height } =
         , transition = transition
         , width = width
         , height = height
+        , keyboardNavigation = True
         }
+
+
+{-| Disable keyboard navigation (arrow keys).
+
+    Gallery.config
+        { id = "image-gallery"
+        , transition = 500
+        , width = Gallery.px 800
+        , height = Gallery.px 400
+        }
+        |> Gallery.disableKeyboardNavigation
+
+-}
+disableKeyboardNavigation : Config -> Config
+disableKeyboardNavigation (Config configR) =
+    Config { configR | keyboardNavigation = False }
 
 
 
@@ -275,7 +295,7 @@ current (State index_ _ _) =
 view : Config -> State -> List Controls -> List ( String, Html Msg ) -> Html Msg
 view ((Config configR) as config_) ((State _ drag _) as state) navigation slides =
     div [ id configR.id ] <|
-        [ Lazy.lazy2 viewSlides state slides
+        [ Lazy.lazy3 viewSlides configR.keyboardNavigation state slides
         , Lazy.lazy2 styleSheet config_ drag
         ]
             ++ List.map (viewControls state) navigation
@@ -285,15 +305,15 @@ view ((Config configR) as config_) ((State _ drag _) as state) navigation slides
 -- SLIDES
 
 
-viewSlides : State -> List ( String, Html Msg ) -> Html Msg
-viewSlides ((State index_ _ _) as state) slides =
-    Keyed.ul (viewSlidesAttributes state) <|
+viewSlides : Bool -> State -> List ( String, Html Msg ) -> Html Msg
+viewSlides keyboardNavigation ((State index_ _ _) as state) slides =
+    Keyed.ul (viewSlidesAttributes keyboardNavigation state) <|
         List.indexedMap (viewSlide index_) slides
 
 
-viewSlidesAttributes : State -> List (Attribute Msg)
-viewSlidesAttributes ((State _ drag slideCount) as state) =
-    events drag
+viewSlidesAttributes : Bool -> State -> List (Attribute Msg)
+viewSlidesAttributes keyboardNavigation ((State _ drag slideCount) as state) =
+    events keyboardNavigation drag
         ++ [ classList
                 [ ( "elm-gallery-transition", drag == Nothing ) ]
            , style "transform" (toTranslate state)
@@ -371,13 +391,21 @@ viewControlsArrows (State index_ _ slideCount) =
 -- EVENTS
 
 
-events : Maybe Drag -> List (Attribute Msg)
-events drag =
+events : Bool -> Maybe Drag -> List (Attribute Msg)
+events keyboardNavigation drag =
+    let
+        keyboardEvent =
+            if keyboardNavigation then
+                [ on "keydown" (Decode.andThen keycodeToMsg decodeKeyboard) ]
+
+            else
+                []
+    in
     moveEvent drag
         ++ [ on "mousedown" (Decode.map DragStart decodePosition)
            , on "touchstart" (Decode.map DragStart decodePosition)
-           , on "keydown" (Decode.andThen keycodeToMsg decodeKeyboard)
            ]
+        ++ keyboardEvent
 
 
 moveEvent : Maybe a -> List (Attribute Msg)

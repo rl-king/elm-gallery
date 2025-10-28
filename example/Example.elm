@@ -99,6 +99,7 @@ textConfig =
         , width = Gallery.px 600
         , height = Gallery.px 400
         }
+        |> Gallery.disableKeyboardNavigation
 
 
 images : List String
